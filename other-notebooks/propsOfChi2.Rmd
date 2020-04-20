@@ -1,0 +1,57 @@
+---
+title: "Properties of chi-squared distribution"
+author: "Masayuki Sakai"
+date: "yyyy/mm/dd"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 2
+    number_section: true
+  always_allow_html: yes
+header-includes: 
+  - \usepackage{bookmark} 
+  - \usepackage{xltxtra} 
+  - \usepackage{zxjatype} 
+  - \usepackage[ipa]{zxjafont} 
+  - \usepackage{mathspec}
+  - \usepackage{amsthm}
+  - \usepackage{indentfirst} # first paragraphのインデントを有効化（英文はインデントが不要のため）
+  - \parindent = 1em         # インデント（字下げ）を1文字に設定
+  - \usepackage{float} # 図の位置指定（fig.pos）をする場合使う
+  - \usepackage{bm}
+  - \newtheorem{definition}{Definition}
+  - \newtheorem{theorem}{Theorem}
+  - \newtheorem{assumption}{Assumption}
+  - \newtheorem{lemma}{Lemma}
+  - \newcommand{\rank}{\rm rank}
+  - \newcommand{\R}{\mathbb R}
+  - \newcommand{\e}{\varepsilon}
+  - \newcommand{\cov}{\rm Cov}
+  - \newcommand{\diag}{\rm diag}
+---
+
+本書はカイ二乗分布の性質についてまとめたものである．
+
+# 定義  
+ある確率変数$X$の従う分布が次の密度関数$f$を持つ時，確率変数$X$はカイ二乗分布に従うという．
+
+$$
+\begin{aligned}
+  f(x) = \frac{1}{\Gamma(\frac{p}{2})2^{\frac{p}{2}}} x^{\frac{p}{2}-1} \exp\left({-\frac{x}{2}}\right)
+\end{aligned}
+$$
+
+ここで$p$は自由度と呼ばれる形状パラメーターである．
+
+## ガンマ関数  
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,420 @@
+---
+title: "linear_regression"
+author: "Masayuki Sakai"
+date: "yyyy/mm/dd"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 2
+    number_section: true
+  always_allow_html: yes
+header-includes: 
+  - \usepackage{bookmark} 
+  - \usepackage{xltxtra} 
+  - \usepackage{zxjatype} 
+  - \usepackage[ipa]{zxjafont} 
+  - \usepackage{mathspec}
+  - \usepackage{amsthm}
+  - \usepackage{indentfirst} # first paragraphのインデントを有効化（英文はインデントが不要のため）
+  - \parindent = 1em         # インデント（字下げ）を1文字に設定
+  - \usepackage{float} # 図の位置指定（fig.pos）をする場合使う
+  - \usepackage{bm}
+  - \newtheorem{definition}{Definition}
+  - \newtheorem{theorem}{Theorem}
+  - \newtheorem{assumption}{Assumption}
+  - \newtheorem{lemma}{Lemma}
+  - \newcommand{\rank}{\rm rank}
+  - \newcommand{\R}{\mathbb R}
+  - \newcommand{\e}{\varepsilon}
+  - \newcommand{\cov}{\rm Cov}
+  - \newcommand{\diag}{\rm diag}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+require(tidyverse)
+require(data.table)
+```
+
+# 最小二乗法　　
+ここでは，n個の対になる観測値，${\bm x} = (x_1, x_2, \ldots, x_n)^T \in \mathbb R^n$と${\bm y} = (y_1, y_2, \ldots, y_n)^T \in \mathbb R^n$について最小二乗法により線形モデルである
+
+$$
+y_i = \beta_0 + \beta_1 x_i + \varepsilon_i \\
+\varepsilon_i \sim N(0, \sigma^2)
+$$
+のパラメーター$\beta_0, \beta_1$を求める．
+
+これは，直線から上下の距離$|y_i - \beta_0 - \beta_1 x_i|$の二乗和$L$を最小にする${\bm \beta} = (\beta_0, \beta_1)^T \in \mathbb R^2$を求める時に，$L$の偏微分を用いる．まず
+
+$$
+L := \sum_{i=1}^{n} (y_i - \beta_0 - \beta_1 x_i)^2
+$$
+
+として，これを$\beta_0, \beta_i$の関数と見てそれぞれの偏微分を求めると
+
+$$
+\frac{\partial L}{\partial \beta_0} = -2 \sum_{i=1}^{n}(y_i - \beta_0 - \beta_1 x_i) = 0 \\
+\frac{\partial L}{\partial \beta_1} = -2 \sum_{i=1}^{n} x_i (y_i - \beta_0 - \beta_1 x_i) = 0
+$$
+
+となる．この連立方程式を解くと
+
+$$
+\begin{aligned}
+\hat \beta_1 &= \frac{\sum_{i=1}^{n} (x_i - \bar x)(y_i - \bar y)}{\sum_{i=1}^{n}(x_i - \bar x)^2} \\
+\hat \beta_0 &= \bar y - \hat \beta_1 \bar x
+\end{aligned}
+$$
+
+を得る．ただし$\sum_{i=1}^{n}(x_i - \bar x)^2 \neq 0$である．これは，共変量$\bm x$の値が全て同じことを意味しており，そのような変数はなんら情報を持たないためこのケースは実務上無視して良い．
+また，$\bar x = \sum x_i/n, \bar y = \sum y_i / n$である．
+
+ここで，$\bm x' = \bm x - \bar x, \bm y' = \bm y - \bar y$とすると，$\bar{y'} = \bar{x'} = 0$で$\bar \beta_0 = 0$，$\hat \beta_1 = \sum x_i y_i/\sum x_i^2$となり計算が簡単になる．
+加減による傾きの影響は無いので，$\hat \beta_1$の推定はこのままで問題はないが，切片項$\beta_0$はもとのスケールで計算する必要がある．
+
+## 実装
+ここでは，シンプルに$\bm x, \bm y$という２つのベクトルを受け取った場合に，$\hat \beta_0, \hat \beta_1$を返す関数を書く．
+
+```{r}
+lsm <- function(x, y){
+  if(length(unique(x)) == 1){
+    stop("x has only 1 unique values")
+  }
+  # estimation
+  bar_x <- mean(x); bar_y <- mean(y)
+  hat_b1 <- sum((x-bar_x)*(y-bar_y)) / sum((x-bar_x)^2)
+  hat_b0 <- bar_y - hat_b1 * bar_x
+  
+  # return
+  return(list(b0 = hat_b0, b1 = hat_b1))
+}
+```
+
+```{r}
+set.seed(100)
+beta <- c(0.3, 0.8)
+n <- 100
+x <- c(rep(1,n), rnorm(n)) %>% matrix(nrow=100, byrow=FALSE)
+y <- x %*% beta + rnorm(n)
+
+fit <- lsm(x=x[,2], y=y[,1])
+fit_centered <- lsm(x=x[,2]-mean(x[,2]), y=y-mean(y))
+
+print(fit)
+print(fit_centered)
+```
+
+
+```{r}
+data.frame(x=x[,2], y=y) %>% 
+  ggplot(aes(x=x, y=y)) + 
+  geom_point() + 
+  geom_abline(aes(slope = fit$b1, intercept = fit$b0, color = 'non-centralization'), show.legend = TRUE) + 
+  geom_abline(aes(slope = fit_centered$b1, intercept = fit_centered$b0, color = 'centralization'), show.legend = TRUE) +
+  labs(color="Lines") + 
+  scale_color_manual(values = c('orange', 'lightblue'))
+```
+
+
+# 重回帰モデル
+
+$$
+y:= \begin{bmatrix} y_1 \\ \vdots \\ y_n \end{bmatrix}, \hspace{5mm}
+X:= \begin{bmatrix} 1 & x_1 \\ \vdots & \vdots \\ 1 & x_n \end{bmatrix}, \hspace{5mm}
+\bm \beta:=\begin{bmatrix} \beta_0 \\ \beta_1 \end{bmatrix}
+$$
+
+とすると，
+
+$$
+L = \|y - X \bm \beta \|^2
+$$
+
+とかけて，
+
+$$
+\nabla L := \begin{bmatrix} \frac{\partial L}{\partial \beta_0} \\ \frac{\partial L}{\partial \beta_1} \end{bmatrix}  = -2 X^T (y - X \bm \beta)
+$$
+
+と表すことができる．ここから共変量の数を増やして
+
+$$
+X:= \begin{bmatrix}
+  1 & x_{11} & \cdots & x_{1p}  \\ 
+  \vdots & \vdots & \ddots & \vdots \\
+  1 & x_{n1} & \cdots & x_{np} \end{bmatrix} \hspace{5mm} 
+\bm beta := \begin{bmatrix} \beta_0 \\ \beta_1 \\ \vdots \\ \beta_p \end{bmatrix} 
+$$
+
+とする．このように拡張してもやることは変わらず，
+
+$$
+-2 X^T (y - X \bm \beta) = {\bf 0}
+$$
+
+を解く．結果として，
+
+$$
+\hat{\boldsymbol \beta} = (X^TX)^{-1} X^T y
+$$
+
+を得る．ただし，$(X^T X)^{-1}$は存在するとする．
+
+## 実装  
+
+```{r}
+lsm <- function(X, y){
+  res <- solve(t(X)%*%X) %*% t(X) %*% y
+  return(res %>% as.vector)
+}
+```
+
+
+```{r}
+n <- 100
+p <- 3
+set.seed(888); beta <- rnorm(4)
+x <- matrix(1, nrow=n, ncol=p+1)
+x[,-1] <- rnorm(100*p)
+set.seed(666);y <- x %*% beta + rnorm(n)
+
+fit <- lsm(X = x, y = y)
+data.frame(beta = beta, fit = fit, diff = beta - fit)
+```
+
+## 考察  
+### $(X^T X)^{-1}$の存在  
+次の場合は$(X^T X)^{-1}$が存在しない．  
+1. $N<p+1$
+2. $X$の異なる２列が等しい
+
+### 関連する補題  
+\begin{lemma}
+正方行列$A \in \mathbb R^{n \times n}$について以下は同値である．  
+1. $A$が正則  
+2. ${\rm rank}(A) = n$  
+3. ${\rm det}(A) \neq 0$
+\end{lemma}
+
+\begin{lemma}
+正方行列$A,B$について，次が成り立つ．  
+1. $\det(AB) = \det(A)\det(B)$  
+2. $\det(A^T) = \det(A)$
+\end{lemma}
+
+\begin{lemma}
+
+$A \in \mathbb R^{m \times n}, B \in \mathbb R^{n \times l}$として，以下が成立．　　
+
+$$
+\begin{aligned}
+{\rm rank}(AB) \le \min \{ {\rm rank}(A), {\rm rank}(B) \} \\
+{\rm rank}(A^T) = {\rm rank}(A) \le \min \{ m, n \}
+\end{aligned}
+$$
+
+\end{lemma}
+
+\begin{lemma}
+$V,W$をそれぞれ$\R^n, \R^m$の部分空間として，行列$A \in \R^{m \times n}$による線形写像$V \rightarrow W$の像と核は，それぞれ$V,W$の部分空間であって，それらの次元の和は$n$になる．また，その次元は，$A$の階数に一致する．
+\end{lemma}
+
+### 実務上の仮定  
+以降では，$X \in \R^{N \times (p+1)}$の階数は$p+1$であることを仮定する．$p=1$の場合は$\rank(X) = 2 = p+1$と同値．
+
+
+# $\beta$の分布　　　
+被説明変数$\bm y \in \R^N$が共変量$X \in \R^{N \times (p+1)}$とその係数$\bm \beta \in \R^{p+1}$と誤差項$\bm \varepsilon \sim N(\bm \mu, \sigma^2 I)$によって下記のような関係にあると仮定する．
+
+$$
+\bm y = X \bm \beta + \bm \varepsilon
+$$
+
+ここで，前項のように$\bm \beta$と推定された$\hat{\bm \beta}$は異なるものであることに注意しよう．
+あくまで$\bm \beta$の値は未知である．いま，あらためて$\hat{\bm \beta}$は次のように表せることを確認する．
+
+$$
+\begin{aligned}
+\hat{\bm \beta} &= (X^T X)^{-1} X^Ty \\
+&= (X^T X)^{-1} X^T (X \bm \beta + \bm \e) \\
+&= {\bm \beta} + (X^T X)^{-1} {\bm \e}
+\end{aligned}
+$$
+
+となり，$\hat{\bm \beta}$は$\bm \e$によって決まることがわかる．$\bm \e$が従う分布はその平均を$E[\bm \e] = \bf 0$と仮定していることから，$\hat{\bm \beta}$の分布の平均は$\bm \beta$となる．このように，ある推定量の平均が真値に一致する時，その推定量を不偏推定量(unbiased estimator)と呼ぶ．また，$\hat{\bm \beta}$の分散を考えよう．それぞれの要素の分散$V(\hat{\beta_i})$は定義通り$E(\hat{\beta_i} - {\beta_i})^2$である．また，それぞれの要素間の共分散$\sigma_{i,j} = {\rm Cov}(\hat{\beta_i}, \hat{\beta_j}), (i \neq j)$と定めれば，$\hat{\bm \beta}$の共分散行列は，次のようになる．
+
+$$
+\begin{aligned}
+V(\hat{\bm \beta}) &= E[(\hat{\bm \beta} - \bm \beta)(\hat{\bm \beta} - \bm \beta)^T] \\
+&= E[(\bm \beta + (X^T X)^{-1} X^T \bm \e - \bm beta)(\bm \beta + (X^T X)^{-1} X^T \bm \e - \bm \beta)^T] \\
+&= E[(X^T X)^{-1} X^T \bm \e {\bm \e}^T (X^T X)^{-1} X^T] \\ 
+&= (X^T X)^{-1} E[{\bm \e}{\bm \e}^T] X (X^T X)^{-1} \\
+&= \sigma^2 (X^T X)^{-1}
+\end{aligned}
+$$
+
+となる．これより$\hat{\bm \beta}$の分布は下記のようになることがわかった．
+
+$$
+\hat{\bm \beta} \sim N(\bm \beta, \sigma^2 (X^T X)^{-1})
+$$
+
+# 二乗誤差の分布：Residual sum of squares  
+ここでは，$L = \| \bm y - X \hat{\bm \beta} \|^2$の分布を導出する．まず$H:= X (X^T X)^{-1} X^T$として，その性質を確認していく．
+
+以下を確認しなさい．
+$$
+\begin{aligned}
+H^2 &= H \\
+(I - H)^2 &= I - H \\
+HX &= X \\
+\hat{\bm y} &= H \bm y \\
+\bm y - \hat{\bm y} &= (I - H) \e
+\end{aligned}
+$$
+
+また，$H, I-H$については次の補題が成り立つ．
+
+\begin{lemma}
+$H, I-H$の固有値は，$0,1$のみであり，$H$の固有値1と$I-H$の固有値0の固有空間の次元は$p+1$，$H$の固有値0と$I-H$の固有値1の固有空間の次元は$N-p-1$となる．
+\end{lemma}
+
+証明は後述する．
+
+ここで$RSS$を次のように定義する．
+
+$$
+\begin{aligned}
+RSS &:= \|\bm y - \hat{\bm y} \|  \\
+&= [(I-H)\e]^T [(I-H)\e] \\
+&= \e^T (I-H)^2 \e \\
+&= \e^T (I-H) \e
+\end{aligned}
+$$
+
+
+\begin{lemma}
+対称行列$A$は，ある直交行列$P$を用いて，$P^{-1}AP$という，$A$の固有値が対角成分となる対角行列を作ることができる．
+\end{lemma}
+
+この補題により，実対称行列$I-H$はある直交行列$P$によって対角行列$P(I-H)P^{T}$とできて，この固有値は$N-p-1$個が1，その他は$0$なので対角成を次のように並び替えることができる．
+
+$$
+P(I-H)P^{T} = \diag (1, \ldots, 0, \ldots, 0)
+$$
+
+また，$\bm v = P \bm \e \in \R^N$とすれば$\bm \e = P^T  \bm v$であり，
+
+$$
+\begin{aligned}
+RSS &= {\bm \e}^T (I-H) {\bm \e} \\
+&= [v_1, \ldots, v_{N-p-1}, v_{N-p}, \ldots, v_N] 
+  \begin{bmatrix}
+  1 & 0 & \cdots & \cdots & \cdots& 0 \\
+  0 & \ddots & 0 & \cdots & \cdots & \vdots \\
+  \vdots & 0 & 1 & 0 & \cdots & 0 \\
+  \vdots & \vdots & 0 & 0 & \cdots & \vdots \\
+  \vdots & \vdots & \vdots &  \vdots & \ddots & \vdots \\
+  0 & \cdots & 0 & \cdots & \cdots & 0
+  \end{bmatrix}
+  \begin{bmatrix}
+  v_1 \\ \vdots \\ v_{N-p-1} \\ v_{N-p} \\ \vdots \\ v_N
+  \end{bmatrix} \\
+&= \sum_{i=1}^{N-p-1} v_i ^2
+
+\end{aligned}
+$$
+
+とできる．また$E[P \bm \e] = 0$より，$\bm w = (v_1, v_2, \ldots, v_{N-p-1})$である$\bm w$に対して$E[\bm w] = 0$が成り立つ．また，
+
+$$
+\begin{aligned}
+E[{\bm v}{\bm v}^T] &= E[P{\bm \e}(P{\bm \e})^T] \\
+&= PE[{\bm \e}{\bm \e}^T] P^T \\
+&= P \sigma^2 \tilde I P^T \\
+&= \sigma^2 \tilde I
+\end{aligned}
+$$
+
+が成り立つ．ここで$\tilde I$は対角成分の最初から$N-p-1$個目までが1でそれ以降が0であるような対角行列である．
+
+すなわち，$E[{\bm w}{\bm w}^T] = \sigma^2 I$である．ここで，正規分布においては各変量の独立性と，それらの共分散行列が対角行列であることは同値なので，
+
+$$
+\frac{RSS}{\sigma^2} \sim \chi^2_{N-p-1}
+$$
+
+となる．ここで$\chi^2_m$は自由度$m$のカイ二乗分布を表す．これは，標準正規分布に従う$m$個の独立な確率変数の二乗和が従う分布である．
+
+
+## 実験
+```{r}
+x <- seq(0.5, 20, length.out = 200)
+df_values <- c(1:10)
+names(df_values) <- 1:10
+df <- map_dfc(.x = as.list(df_values), .f = function(df){dchisq(x,df=df)}) %>% 
+  mutate(x=x) %>% 
+  pivot_longer(-x) %>% 
+  mutate(name = as.integer(name)) %>% 
+  ggplot(aes(x=x, y=value, group=name, color=as.factor(name))) + 
+  geom_line() + 
+  scale_y_continuous(aes(limits = c(0,0.4))) + 
+  labs(color ="degree of freedom") -> g
+
+plot(g)
+```
+
+書籍にあったやつはこっち．
+```{r}
+for(i in 1:10) curve(dchisq(i,x), 0, 20, col=i, add=ifelse(i==1, FALSE, TRUE), ann=ifelse(i==1,TRUE,FALSE))
+legend("topright", legend=1:10, col=1:10, lty=1)
+```
+
+# $\hat \beta_j$の仮説検定  
+回帰モデルの興味の１つは，推定した係数$\hat{\bm \beta} = 0$かどうかである．つまり，興味のある変数$\bm y$に対して影響の有無を確かめたい．
+
+そのために，「もし$\hat{\bm \beta} = 0$であったなら」という仮定のもと$\hat{\bm \beta}$から計算できる統計量の分布に対する実際の推定値の値の関係を判断材料とする．
+
+具体的には，$\hat{\bm \beta}$が自由度$N-p-1$の$t$分布に従うことを確認し，仮説検定を構成する．
+
+## 誤差による推定値のばらつき  
+```{r}
+set.seed(1)
+n <- 100
+x <- cbind(1, rnorm(n,2,1))
+hat_beta <- matrix(0, ncol=2, nrow=100)
+for(i in 1:100){
+  y <- apply(cbind(x, rnorm(n,0,1)), 1, sum)
+  fit <- lsm(X=x,y=y)
+  hat_beta[i,1] <- fit[1]
+  hat_beta[i,2] <- fit[2]
+}
+```
+
+
+```{r}
+as.data.frame(hat_beta) %>% 
+  ggplot(aes(x=V1, y=V2)) + 
+  geom_point()
+```
+
+単純なモデル$y_i = 1 + x_i + \e$，ただし$x_i \sim N(2,1), \e_i \sim N(0,1)$としたモデルを考える．$n=1,\ldots,100$として，$x_i$を一回サンプリングして固定する．その後
+
+- \e_i をサンプリングして$y_i$を計算したのち，$y_i, x_i$から$\beta_0, \beta_1$を推定する
+
+という実験を100回繰り返した結果を図示した．モデルの定義より$\beta_0 = 1, \beta_1 = 1$であるが，推定値は観測の際に含まれる誤差項の影響を受けて各回でばらついていることがわかる．
+
+## $t$分布
+$t$分布について簡単に紹介したのち，$t$分布の形状を確認しよう．
+
+いま，２つの独立な確率変数$U \sim N(0,1)$と$V \sim \chi^2_m$を考える．この時$T := U/\sqrt{V/m}$という確率変数$T$が従う分布が自由度$m$の$t$分布になる．
+
+
+
+
+
