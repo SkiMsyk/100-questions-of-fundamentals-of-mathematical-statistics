@@ -35,9 +35,10 @@ header-includes:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r, message=FALSE, warning=FALSE, echo=FALSE}
+```{r import libraries, message=FALSE, warning=FALSE, echo=FALSE}
 require(tidyverse)
 require(data.table)
+require(latex2exp)
 ```
 
 # 最小二乗法　　
@@ -80,7 +81,7 @@ $$
 ## 実装
 ここでは，シンプルに$\bm x, \bm y$という２つのベクトルを受け取った場合に，$\hat \beta_0, \hat \beta_1$を返す関数を書く．
 
-```{r}
+```{r make function-lsm}
 lsm <- function(x, y){
   if(length(unique(x)) == 1){
     stop("x has only 1 unique values")
@@ -95,7 +96,7 @@ lsm <- function(x, y){
 }
 ```
 
-```{r}
+```{r example of lsm}
 set.seed(100)
 beta <- c(0.3, 0.8)
 n <- 100
@@ -110,7 +111,7 @@ print(fit_centered)
 ```
 
 
-```{r}
+```{r plot-lsm}
 data.frame(x=x[,2], y=y) %>% 
   ggplot(aes(x=x, y=y)) + 
   geom_point() + 
@@ -167,7 +168,7 @@ $$
 
 ## 実装  
 
-```{r}
+```{r make function lsm matrix-ver}
 lsm <- function(X, y){
   res <- solve(t(X)%*%X) %*% t(X) %*% y
   return(res %>% as.vector)
@@ -175,7 +176,7 @@ lsm <- function(X, y){
 ```
 
 
-```{r}
+```{r example lsm2}
 n <- 100
 p <- 3
 set.seed(888); beta <- rnorm(4)
@@ -291,7 +292,7 @@ $H, I-H$の固有値は，$0,1$のみであり，$H$の固有値1と$I-H$の固�
 $$
 \begin{aligned}
 RSS &:= \|\bm y - \hat{\bm y} \|  \\
-&= [(I-H)\e]^T [(I-H)\e] \\
+&= [(I-H) \e]^T [(I-H) \e] \\
 &= \e^T (I-H)^2 \e \\
 &= \e^T (I-H) \e
 \end{aligned}
@@ -312,25 +313,24 @@ $$
 
 $$
 \begin{aligned}
-RSS &= {\bm \e}^T (I-H) {\bm \e} \\
-&= [v_1, \ldots, v_{N-p-1}, v_{N-p}, \ldots, v_N] 
-  \begin{bmatrix}
-  1 & 0 & \cdots & \cdots & \cdots& 0 \\
-  0 & \ddots & 0 & \cdots & \cdots & \vdots \\
-  \vdots & 0 & 1 & 0 & \cdots & 0 \\
-  \vdots & \vdots & 0 & 0 & \cdots & \vdots \\
-  \vdots & \vdots & \vdots &  \vdots & \ddots & \vdots \\
-  0 & \cdots & 0 & \cdots & \cdots & 0
-  \end{bmatrix}
-  \begin{bmatrix}
-  v_1 \\ \vdots \\ v_{N-p-1} \\ v_{N-p} \\ \vdots \\ v_N
-  \end{bmatrix} \\
-&= \sum_{i=1}^{N-p-1} v_i ^2
-
+RSS &= {\bm \e}^{T} (I-H) {\bm \e}  \\
+  &= [v_1, \ldots, v_{N-p-1}, v_{N-p}, \ldots, v_N] \begin{bmatrix}
+      1      & 0      & \cdots & \cdots & \cdots & 0       \\
+      0      & \ddots & 0      & \cdots & \cdots & \vdots  \\
+      \vdots & 0      & 1      & 0      & \cdots & 0       \\
+      \vdots & \vdots & 0      & 0      & \cdots & \vdots  \\
+      \vdots & \vdots & \vdots & \vdots & \ddots & \vdots  \\
+      0      & \cdots & 0      & \cdots & \cdots & 0
+    \end{bmatrix}
+    \begin{bmatrix}
+      v_1 \\ \vdots \\ v_{N-p-1} \\ v_{N-p} \\ \vdots \\ v_N
+    \end{bmatrix} \\
+  &= \sum_{i=1}^{N-p-1} v_i^2
 \end{aligned}
 $$
 
-とできる．また$E[P \bm \e] = 0$より，$\bm w = (v_1, v_2, \ldots, v_{N-p-1})$である$\bm w$に対して$E[\bm w] = 0$が成り立つ．また，
+
+とできる．また$E[P \bm{\e}] = 0$より，$\bm w = (v_1, v_2, \ldots, v_{N-p-1})$である$\bm w$に対して$E[\bm w] = 0$が成り立つ．また，
 
 $$
 \begin{aligned}
@@ -352,8 +352,9 @@ $$
 となる．ここで$\chi^2_m$は自由度$m$のカイ二乗分布を表す．これは，標準正規分布に従う$m$個の独立な確率変数の二乗和が従う分布である．
 
 
+
 ## 実験
-```{r}
+```{r pdfs-of-chi-distribution}
 x <- seq(0.5, 20, length.out = 200)
 df_values <- c(1:10)
 names(df_values) <- 1:10
@@ -362,15 +363,18 @@ df <- map_dfc(.x = as.list(df_values), .f = function(df){dchisq(x,df=df)}) %>%
   pivot_longer(-x) %>% 
   mutate(name = as.integer(name)) %>% 
   ggplot(aes(x=x, y=value, group=name, color=as.factor(name))) + 
-  geom_line() + 
-  scale_y_continuous(aes(limits = c(0,0.4))) + 
-  labs(color ="degree of freedom") -> g
+    geom_line() + 
+    scale_y_continuous(aes(limits = c(0,0.4))) + 
+    labs(
+      # title = TeX("PDFs of $\\chi^2$ distribution with parameters."),
+      color ="degree of freedom"
+      ) -> g
 
 plot(g)
 ```
 
 書籍にあったやつはこっち．
-```{r}
+```{r book-fig-reproduction1}
 for(i in 1:10) curve(dchisq(i,x), 0, 20, col=i, add=ifelse(i==1, FALSE, TRUE), ann=ifelse(i==1,TRUE,FALSE))
 legend("topright", legend=1:10, col=1:10, lty=1)
 ```
@@ -383,7 +387,7 @@ legend("topright", legend=1:10, col=1:10, lty=1)
 具体的には，$\hat{\bm \beta}$が自由度$N-p-1$の$t$分布に従うことを確認し，仮説検定を構成する．
 
 ## 誤差による推定値のばらつき  
-```{r}
+```{r beta-estimation-experiment}
 set.seed(1)
 n <- 100
 x <- cbind(1, rnorm(n,2,1))
@@ -397,22 +401,141 @@ for(i in 1:100){
 ```
 
 
-```{r}
+```{r reuslt-of-beta-estimation}
 as.data.frame(hat_beta) %>% 
   ggplot(aes(x=V1, y=V2)) + 
-  geom_point()
+  geom_point() + 
+  geom_vline(xintercept = 1, color = 'orange') + 
+  geom_hline(yintercept = 1, color = 'orange') +
+  labs(title = TeX("Estimated values of $\\beta$"),
+       subtitle = TeX(str_interp("$\\bar{x}$ = $[.2f]{value}", list(value = mean(x[,2])))),
+       y = TeX("$\\beta_2$"),
+       x = TeX("$\\beta_1$"))
 ```
 
-単純なモデル$y_i = 1 + x_i + \e$，ただし$x_i \sim N(2,1), \e_i \sim N(0,1)$としたモデルを考える．$n=1,\ldots,100$として，$x_i$を一回サンプリングして固定する．その後
+単純なモデル$y_i = 1 + x_i + \e$，ただし$x_i \sim N(2,1), {\e}_i \sim N(0,1)$としたモデルを考える．$n=1,\ldots,100$として，$x_i$を一回サンプリングして固定する．その後
 
-- \e_i をサンプリングして$y_i$を計算したのち，$y_i, x_i$から$\beta_0, \beta_1$を推定する
+- $\e_i$ をサンプリングして$y_i$を計算したのち，$y_i, x_i$から$\beta_0, \beta_1$を推定する
 
 という実験を100回繰り返した結果を図示した．モデルの定義より$\beta_0 = 1, \beta_1 = 1$であるが，推定値は観測の際に含まれる誤差項の影響を受けて各回でばらついていることがわかる．
 
 ## $t$分布
-$t$分布について簡単に紹介したのち，$t$分布の形状を確認しよう．
+$t$分布の形状を確認しよう．いま，２つの独立な確率変数$U \sim N(0,1)$と$V \sim \chi^2_m$を考える．この時$T := U/\sqrt{V/m}$という確率変数$T$が従う分布が自由度$m$の$t$分布になる．
 
-いま，２つの独立な確率変数$U \sim N(0,1)$と$V \sim \chi^2_m$を考える．この時$T := U/\sqrt{V/m}$という確率変数$T$が従う分布が自由度$m$の$t$分布になる．
+```{r color-settings}
+# ref:https://qiita.com/hoxo_b/items/c569da6dbf568032e04a
+ggColorHue <- function(n, l=65) {
+  hues <- seq(15, 375, length=n+1)
+  hcl(h=hues, l=l, c=100)[1:n]
+}
+```
+
+
+```{r pdfs-of-t-distribution, message=FALSE, warning=FALSE}
+# warningが出るが無視
+df_values <- 1:10
+cols <- ggColorHue(n=10)
+
+ggplot(data.frame(x=c(-10, 10)), aes(x)) + 
+  mapply(
+    function(col, df) {
+      stat_function(aes(color=col),fun = dt, args = list(df = df), n = 201)
+    }, 
+    df = df_values, col = cols) + 
+  stat_function(aes(color = 'normal'), fun = dnorm, args = list(mean=0, sd=1), n = 201, size = 1.2) +
+  labs(color = "Degree of freedom") + 
+  scale_color_hue(
+    breaks = c(cols, 'normal'),
+    labels = c(1:10, 'normal')
+  )
+```
+
+太い線が$N(0,1)$の密度関数である．自由度が大きくなると$N(0,1)$の密度関数の形に近づいていることがわかる．
+
+# 仮説検定  
+有意水準$\alpha = 0.01, 0.05$として検定統計量$t$によって検定を行う．ここで帰無仮説は$\beta_j = 0$である．帰無仮説が成立する下では$t \sim t_{N-p-1}$となる． 
+
+
+いま，$\bm \e$の標準偏差$\sigma$の推定量を次のように構成する．
+
+$$
+\hat \sigma := \sqrt{\frac{RSS}{N-p-1}}
+$$
+
+また，$\hat{\beta_j}$の標準偏差を
+
+$$
+SE(\hat \beta_j):=\hat \sigma \sqrt{B_j}
+$$
+
+とする．ただし，$B_j$は$(X^TX)^{-1}$の$j$番目の対角成分である．
+$p=1$のケースを考える．この時
+
+$$
+\begin{aligned}
+(X^TX) &= \begin{bmatrix} 
+            1 & \cdots & 1 \\
+            x_1 & \cdots & x_N
+          \end{bmatrix}
+\begin{bmatrix}
+  1 & x_1 \\
+  \vdots & \vdots \\
+  1 & x_N
+\end{bmatrix} \\
+&=  \begin{bmatrix}
+      N & \sum_{i=1}^{N} x_i \\
+      \sum_{i=1}^{N} x_i & \sum_{i=1}^{N} x_i^2  
+    \end{bmatrix} \\
+&= \frac{1}{N}\begin{bmatrix}
+      1 & \bar x \\
+      \bar x & \frac{1}{N} \sum_{i=1}^{N} x_i^2
+   \end{bmatrix}
+\end{aligned}
+$$
+
+となる．この逆行列は公式より，以下のようになる．
+
+$$
+  (X^TX)^{-1} = \frac{1}{\sum_{i=1}^{N}(x_i - \bar x)^2} 
+    \begin{bmatrix}  
+      \frac{1}{N} \sum_{i=1}^{N} x_i^2 & -\bar x \\
+      -\bar x & 1
+    \end{bmatrix}
+$$
+
+定義により，$B_1 = (\sum_{i=1}^{N} x_i^2)/(N\sum_{i=1}^N (x_i-\bar x)^2), B_2 = 1/\sum_{i=1}^{N}(x_i - \bar x)^2$となる．$SE(\hat \beta_j) := \hat \sigma \sqrt{B_j}$より，$B_j\sigma^2$の推定値として$B_j \hat \sigma^2$を採用する．
+
+先ほどの実験によると，$\hat \beta_1, \hat \beta_2$は負の相関を持っているように見える．これは$(X^TX)^{-1}$の$(1,2),(2,1)$要素が$\bar x = 2.11$であることによる．
+
+ここからは，
+
+$$
+\begin{aligned}
+  t = \frac{\hat \beta_j - \beta}{SE(\hat \beta_j)} \sim t_{N-P-1}
+\end{aligned}
+$$
+
+が成り立つことを示す．まず，
+
+$$
+\begin{aligned}
+  U &:= \frac{\hat \beta_j - \beta}{\sqrt{B_j} \sigma} \sim N(0,1) \\ 
+  V &:= \frac{RSS}{\sigma^2} \sim \chi^2_{N-p-1}
+\end{aligned}
+$$
+
+として，$U,V$が独立であることを示す。いま$RSS = \hat{\bm y} - \bm y$はより
+
+
+
+
+
+
+
+
+
+
+
 
 
 
