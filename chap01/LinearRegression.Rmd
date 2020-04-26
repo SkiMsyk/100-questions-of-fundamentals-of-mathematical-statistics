@@ -1,5 +1,5 @@
 ---
-title: "linear_regression"
+title: "Linear_regression"
 author: "Masayuki Sakai"
 date: "yyyy/mm/dd"
 output:
@@ -32,7 +32,7 @@ header-includes:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, fig.width = 5, fig.height = 3, fig.align = 'center')
 ```
 
 ```{r import libraries, message=FALSE, warning=FALSE, echo=FALSE}
@@ -374,7 +374,7 @@ plot(g)
 ```
 
 書籍にあったやつはこっち．
-```{r book-fig-reproduction1}
+```{r book-fig-reproduction1, fig.width=6, fig.height=4}
 for(i in 1:10) curve(dchisq(i,x), 0, 20, col=i, add=ifelse(i==1, FALSE, TRUE), ann=ifelse(i==1,TRUE,FALSE))
 legend("topright", legend=1:10, col=1:10, lty=1)
 ```
@@ -431,7 +431,7 @@ ggColorHue <- function(n, l=65) {
 ```
 
 
-```{r pdfs-of-t-distribution, message=FALSE, warning=FALSE}
+```{r pdfs-of-t-distribution, message=FALSE, warning=FALSE, fig.height=3, fig.width=5}
 # warningが出るが無視
 df_values <- 1:10
 cols <- ggColorHue(n=10)
@@ -447,6 +447,14 @@ ggplot(data.frame(x=c(-10, 10)), aes(x)) +
   scale_color_hue(
     breaks = c(cols, 'normal'),
     labels = c(1:10, 'normal')
+  ) + 
+  theme(
+    legend.title = element_text(color = "black", size = 8),
+    legend.text = element_text(color = "black", size = 8),
+    legend.position = c(1, 1), legend.justification = c(1, 1),
+    legend.box.background = element_rect(size=0.1),
+    legend.key = element_rect(fill = "white", colour = "gray", size=0.5),
+    legend.key.height = unit(0.8,"line")
   )
 ```
 
@@ -524,19 +532,262 @@ $$
 \end{aligned}
 $$
 
-として，$U,V$が独立であることを示す。いま$RSS = \hat{\bm y} - \bm y$はより
+として，$U,V$が独立であることを示す。
+
+$$
+\begin{aligned}
+(\hat{\bm \beta} - {\bm \beta}) ({\bm y} - {\hat {\bm y}})^T &= (X^TX)^{-1} X^T {\bm \e} {\bm \e}^T (I-H)
+\end{aligned}
+$$
+
+より
+
+$$
+\begin{aligned}
+E[(\hat{\bm \beta} - {\bm \beta}) ({\bm y} - {\hat {\bm y}})^T] &= \sigma^2 I E[(X^TX)^{-1} X^T(I-H)] \\
+&= \sigma^2 I E[(X^TX)^{-1} X^T - (X^TX)^{-1} X^TH] \\
+&= 0
+\end{aligned}
+$$
+
+となる．ここで，$HX=X \Leftrightarrow X^TH = X$を用いた．また，${\bm y} - {\bar {\bm y}} = (I-H){\bm \e}$は正規分布に従うこと，$\hat{\bm \beta}$が正規分布に従うことから$\hat{\bm \beta} - {\bm \beta}$も正規分布に従うので，正規分布の性質から，$(\hat{\bm \beta} - {\bm \beta}) ({\bm y} - {\hat {\bm y}})^T$は互いに独立であることがわかる．
+
+$U$は$\hat{\bm \beta} - {\bm \beta}$の関数, $V$は$RSS$，すなわち$\bm y - \hat{\bm  y}$の関数であるので，上記の理由により$U,V$は互いに独立であることが導かれた．
+
+## 実験：検定の統計量の手計算と関数の結果比較  
+帰無仮説$H_0:\beta_j=0$，対立仮説$H_1:\beta_j \neq 0$という仮説検定を行う．$p=1$として，$H_0$が成り立つ下での
+
+$$
+t = \frac{\hat{\beta_i} - 0}{SE(\hat{\beta_i})} \sim t_{N-p-1}
+$$
+
+という性質を利用して，Rの線形モデルの推定関数$lm$の値を考察する．
+
+```{r t-test-comparation}
+# sample data
+set.seed(100)
+N <- 100
+x <- rnorm(N)
+y <- rnorm(N)
+p <- 1
+
+# estimate beta
+beta_1 <- sum((x-mean(x))*(y-mean(y))) / sum((x-mean(x))^2)
+beta_0 <- mean(y) - beta_1*mean(x)
+beta   <- c(beta_0, beta_1)
+
+# calc statistics
+X <- cbind(1, x)
+B <- diag(solve(t(X) %*% X))
+
+RSS <- sum((y - beta_0 - beta_1*x)^2)
+SE <- sqrt(RSS/(N-p-1)) * sqrt(B)
+
+t <- beta/SE
+p <- 2 * (1 - pt(abs(t), N-2))
+
+# print results
+results <- data.frame(
+  beta = beta,
+  SE = SE,
+  t_value = t,
+  p_value = p
+)
+
+row.names(results) <- c(0,1)
+
+results
+
+```
+
+デフォルト関数の結果と比較すると一致していることがわかる．
+```{r}
+summary(lm(y~x))$coef %>% data.frame()
+```
+
+## 実験：$\hat{\bm \beta}$の分布  
+上記の要領で$\hat{\bm \beta}$の推定を繰りかえし，$\hat{\beta_1}/SE(\hat \beta_1)$のヒストグラムを描く．
+
+```{r}
+lsm <- function(X, y){
+  res <- solve(t(X)%*%X) %*% t(X) %*% y
+  return(res %>% as.vector)
+}
+
+estimate_beta <- function(x, y){
+  X <- cbind(1, x)
+
+  # estimate beta
+  beta <- lsm(X, y)
+  
+  # calc statistics
+  B <- diag(solve(t(X) %*% X))
+  RSS <- sum((y - beta_0 - beta_1*x)^2)
+  SE <- sqrt(RSS/(N-p-1)) * sqrt(B)
+  t <- beta/SE
+  p <- 2 * (1 - pt(abs(t), N-2))
+  
+  # return
+  res <- list(beta=beta, SE=SE, t=t, p=p)
+  return(res)
+}
+```
 
 
+```{r}
+set.seed(100)
+N <- 100
+r <- 10000
+results <- matrix(NA, nrow = 10000, ncol = 2)
+
+for(i in 1:r){
+  x  <- rnorm(N)
+  y1 <- rnorm(N)
+  y2 <- 0.1*x + rnorm(100)
+  results[i,] <- c(estimate_beta(x, y1)$t[2], estimate_beta(x, y2)$t[2])
+}
+
+results <- results %>% as.data.frame()
+colnames(results) <- c("h0", "h1")
+```
 
 
+```{r, fig.height=3, fig.width=6}
+results %>% 
+  ggplot(aes(x=h0, y=..density..)) + 
+  geom_histogram(binwidth = .1, position = "identity") + 
+  geom_density(fill='orange', alpha=0.3, show.legend = FALSE) + 
+  labs(title = TeX("$H_0:\\beta_1 = 0$")) -> p1
 
+results %>% 
+  ggplot(aes(x=h1, y=..density..)) + 
+  geom_histogram(binwidth = .1, position = "identity") + 
+  geom_density(aes(x=h0, y=..density..), fill = 'orange', alpha=0.3, show.legend = FALSE) +
+  labs(title = TeX("$H_1:\\beta_1 \\neq 0$")) -> p2
 
+gridExtra::grid.arrange(p1, p2, ncol=2, widths = c(2,2))
+```
 
+# 決定係数と共線型性の検出  
+まず
 
+$$
+\begin{aligned}
+RSS &:= \| \hat{\bm y} - \bm y \|^2 = \| (I-H){\bm y} \|^2 \\
+ESS &:= \| \hat{\bm y} - \bar{\bm y} \|^2 = \| (H-W){\bm y} \|^2 \\
+TSS &:= \| \bm y - \bar{\bm y} \|^2 = \| (I-W) \bm y  \|^2
+\end{aligned}
+$$
 
+ここで，$W \in \R^{N \times N}, W{i,j} = 1/N, i,j = 1,\ldots,N$とする．また，$TSS = RSS + ESS$が成り立つ．
+この時，$HX=X$より，$HW=W$が成立する．これより$(I-H)(H-W) = H-W-H^2 + HW = H - W - H + W = 0$が成り立つ．
+特に，
 
+$$
+R^2 = \frac{ESS}{TSS} = 1 - \frac{RSS}{TSS}
+$$
 
+を決定係数(coefficient of determination)という．この時，$R^2$は$p=1$の場合，標本相関係数$\hat p$の二乗に一致する．
 
+$$
+\hat p := \frac{(\bm x - \bar x)^T(\bm y - \bar y)}{\sqrt{\sum_{i=1}^{N}(x_i - \bar x)^2 \sum_{i=1}^{N}(y_i - \bar y)}}
+$$
+
+$$
+\begin{aligned}
+\frac{ESS}{TSS} &= \frac{\hat{\beta_1} \| \bm x - \bar x \|^2}{\| \bm y - \bar y \|^2} \\
+&= \left\{ \frac{\sum_{i=1}^{N}(x_i - \bar x)(y_i - \bar y)}{\sum_{i=1}^{N} (x_i - \bar x)^2} \right\}^2 \frac{\sum_{i=1}^{N}(x_i - \bar x)^2}{\sum_{i=1}^{N}(y_i - \bar y)^2} \\
+&=\frac{\left[\sum_{i=1}^{N}(x_i - \bar x)(y_i - \bar y) \right]^2}{\sum_{i=1}^{N} (x_i - \bar x)^2 \sum_{i=1}^{N} (y_i - \bar y)^2} \\
+&= \hat p^2
+\end{aligned}
+$$
+
+また，これに対して，
+
+$$
+1 - \frac{RSS/(N-p-1)}{TSS/(N-1)}
+$$
+
+という指標も使われ，これを調整済み決定係数(adjusted coefficient of determination)という．これは$RSS, TSS$をそれぞれの自由度で割ったものである．説明変数が多くなる($p$の値が大きくなる)場合，決定係数は大きくなるが，調整済み決定係数は小さくなるように補正される．意味合いとして，説明変数を多くすることにペナルティを課すことでおよそ目的変数に関係の無い説明変数を加えることによる過学習を是正することが期待されている．
+
+## 決定係数の計算  
+```{r}
+calc_r2 <- function(x,y,beta){
+  # x is covariate matrix that include 1-column
+  # y is target variable
+  yhat <- x %*% beta
+  ess  <- sum((yhat-mean(y))^2)
+  tss  <- sum((y-mean(y))^2)
+  rss  <- tss - ess
+  r2   <- ess/tss
+  adjtd_r2 <- 1 - {rss/(length(y)-ncol(x))} / {tss/(length(y)-1)}
+  return(list(r2=r2, adjtd_r2=adjtd_r2))
+}
+```
+
+```{r}
+set.seed(100)
+N <- 100
+x  <- cbind(1, rnorm(N))
+y <- rnorm(N)
+beta <- lsm(x, y)
+str_interp("r2 = $[.3f]{r2}, adjusted_r2 = $[.3f]{adjtd_r2}", calc_r2(x, y, beta)) %>% print
+```
+```{r}
+res <- summary(lm(y~x[,2]))
+str_interp("r2 = $[.3f]{r2}, adjusted_r2 = $[.3f]{ar2}", list(r2 = res$r.squared, ar2 = res$adj.r.squared)) %>% print
+```
+
+また，$VIF:=1/(1-R^2_{X_j|X_{-j}})$という指標があり，これは説明変数同士に冗長なものが無いかどうかを測る尺度として用いられる．ここで$R^2_{X_j|X_{-j}}$は目的変数に$j$番目の説明変数を，説明変数として$j$番目を除いた全ての説明変数としたモデルにおける$R^2$である．
+
+```{r}
+calc_vif <- function(x){
+  res <- rep(NA, ncol(x)-1)
+  for(i in 2:ncol(x)){
+    beta <- lsm(X=x[,-i], y=x[,i])
+    res[i-1] <- 1/(1-calc_r2(x[,-i], x[,i], beta)$r2)
+  }
+  return(res)
+}
+```
+
+```{r}
+require(MASS)
+x <- cbind(1, Boston) %>% as.matrix()
+res <- calc_vif(x)
+print(res)
+```
+
+# 信頼区間と予測区間  
+ここからは$\hat{\bm \beta}$の分布を利用して信頼区間について考えていく．$t$の従う分布の確率密度関数を$f$とおいた時，
+
+$$
+\begin{aligned}
+\frac{\alpha}{2} = \int_t^{\infty} f(u)du
+\end{aligned}
+$$
+
+となる$t$を$t_{N-p-1}(\alpha/2)$とすると，$\hat \beta_j$の信頼区間として，
+
+$$
+\beta_i = \hat \beta_i \pm t_{N-p-1}(\alpha/2) SE(\hat \beta_i), \  i=0,1,\ldots,p
+$$
+が得られる．
+
+$\bm x_\ast \hat{\bm \beta}$を，推定に用いた$\bm x$とは異なる点$\bm x_\ast \in \R^{p+1}$とおく．この時，$\bm x_\ast \hat{\bm \beta}$の平均
+
+$$
+E[\bm x_\ast \hat{\bm \beta}] = \bm x_\ast E[\hat{\bm \beta}]
+$$
+
+であり，$\e_i$の分散$\sigma^2$から
+
+$$
+\begin{aligned}
+V[\bm{x}_\ast \hat\beta] &= E[({\bm x}_\ast \hat{\bm \beta} - E[{\bm x}_\ast \hat{\bm \beta}])^T({\bm x}_\ast \hat{\bm \beta} - E[{\bm x}_\ast \hat{\bm \beta}])] \\
+&= 
+\end{aligned}
+$$
 
 
 
