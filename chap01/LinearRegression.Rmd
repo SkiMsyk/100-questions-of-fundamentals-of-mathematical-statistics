@@ -115,8 +115,16 @@ print(fit_centered)
 data.frame(x=x[,2], y=y) %>% 
   ggplot(aes(x=x, y=y)) + 
   geom_point() + 
-  geom_abline(aes(slope = fit$b1, intercept = fit$b0, color = 'non-centralization'), show.legend = TRUE) + 
-  geom_abline(aes(slope = fit_centered$b1, intercept = fit_centered$b0, color = 'centralization'), show.legend = TRUE) +
+  geom_abline(
+    aes(slope = fit$b1, 
+        intercept = fit$b0, 
+        color = 'non-centralization'),
+    show.legend = TRUE) + 
+  geom_abline(
+    aes(slope = fit_centered$b1, 
+        intercept = fit_centered$b0, 
+        color = 'centralization'), 
+    show.legend = TRUE) +
   labs(color="Lines") + 
   scale_color_manual(values = c('orange', 'lightblue'))
 ```
@@ -375,7 +383,13 @@ plot(g)
 
 書籍にあったやつはこっち．
 ```{r book-fig-reproduction1, fig.width=6, fig.height=4}
-for(i in 1:10) curve(dchisq(i,x), 0, 20, col=i, add=ifelse(i==1, FALSE, TRUE), ann=ifelse(i==1,TRUE,FALSE))
+for(i in 1:10){
+  curve(
+    dchisq(i,x), 0, 20, col=i, 
+    add=ifelse(i==1, FALSE, TRUE), 
+    ann=ifelse(i==1,TRUE,FALSE)
+  )
+} 
 legend("topright", legend=1:10, col=1:10, lty=1)
 ```
 
@@ -408,9 +422,13 @@ as.data.frame(hat_beta) %>%
   geom_vline(xintercept = 1, color = 'orange') + 
   geom_hline(yintercept = 1, color = 'orange') +
   labs(title = TeX("Estimated values of $\\beta$"),
-       subtitle = TeX(str_interp("$\\bar{x}$ = $[.2f]{value}", list(value = mean(x[,2])))),
+       subtitle = TeX(str_interp(
+         "$\\bar{x}$ = $[.2f]{value}", 
+         list(value = mean(x[,2])))
+       ),
        y = TeX("$\\beta_2$"),
-       x = TeX("$\\beta_1$"))
+       x = TeX("$\\beta_1$")
+     )
 ```
 
 単純なモデル$y_i = 1 + x_i + \e$，ただし$x_i \sim N(2,1), {\e}_i \sim N(0,1)$としたモデルを考える．$n=1,\ldots,100$として，$x_i$を一回サンプリングして固定する．その後
@@ -442,7 +460,9 @@ ggplot(data.frame(x=c(-10, 10)), aes(x)) +
       stat_function(aes(color=col),fun = dt, args = list(df = df), n = 201)
     }, 
     df = df_values, col = cols) + 
-  stat_function(aes(color = 'normal'), fun = dnorm, args = list(mean=0, sd=1), n = 201, size = 1.2) +
+  stat_function(aes(color = 'normal'), 
+                fun = dnorm, args = list(mean=0, sd=1), 
+                n = 201, size = 1.2) +
   labs(color = "Degree of freedom") + 
   scale_color_hue(
     breaks = c(cols, 'normal'),
@@ -662,7 +682,8 @@ results %>%
 results %>% 
   ggplot(aes(x=h1, y=..density..)) + 
   geom_histogram(binwidth = .1, position = "identity") + 
-  geom_density(aes(x=h0, y=..density..), fill = 'orange', alpha=0.3, show.legend = FALSE) +
+  geom_density(aes(x=h0, y=..density..), fill = 'orange', 
+               alpha=0.3, show.legend = FALSE) +
   labs(title = TeX("$H_1:\\beta_1 \\neq 0$")) -> p2
 
 gridExtra::grid.arrange(p1, p2, ncol=2, widths = c(2,2))
@@ -731,11 +752,16 @@ N <- 100
 x  <- cbind(1, rnorm(N))
 y <- rnorm(N)
 beta <- lsm(x, y)
-str_interp("r2 = $[.3f]{r2}, adjusted_r2 = $[.3f]{adjtd_r2}", calc_r2(x, y, beta)) %>% print
+str_interp("r2 = $[.3f]{r2}, adjusted_r2 = $[.3f]{adjtd_r2}", 
+           calc_r2(x, y, beta)) %>% 
+  print
 ```
+
 ```{r}
 res <- summary(lm(y~x[,2]))
-str_interp("r2 = $[.3f]{r2}, adjusted_r2 = $[.3f]{ar2}", list(r2 = res$r.squared, ar2 = res$adj.r.squared)) %>% print
+str_interp("r2 = $[.3f]{r2}, adjusted_r2 = $[.3f]{ar2}", 
+           list(r2 = res$r.squared, ar2 = res$adj.r.squared)) %>% 
+  print
 ```
 
 また，$VIF:=1/(1-R^2_{X_j|X_{-j}})$という指標があり，これは説明変数同士に冗長なものが無いかどうかを測る尺度として用いられる．ここで$R^2_{X_j|X_{-j}}$は目的変数に$j$番目の説明変数を，説明変数として$j$番目を除いた全ての説明変数としたモデルにおける$R^2$である．
@@ -780,15 +806,192 @@ $$
 E[\bm x_\ast \hat{\bm \beta}] = \bm x_\ast E[\hat{\bm \beta}]
 $$
 
-であり，$\e_i$の分散$\sigma^2$から
+であり，定数行列$A \in \R^{n \times m}$と確率変数ベクトル$X \in \R^n$について，$V(AX) = AV(X)A^T$が成り立つことから，
 
 $$
 \begin{aligned}
-V[\bm{x}_\ast \hat\beta] &= E[({\bm x}_\ast \hat{\bm \beta} - E[{\bm x}_\ast \hat{\bm \beta}])^T({\bm x}_\ast \hat{\bm \beta} - E[{\bm x}_\ast \hat{\bm \beta}])] \\
-&= 
+V[\bm{x}_\ast \hat{\bm \beta}] &= {\bm x_\ast} V(\hat{\bm \beta}) {\bm x_\ast}^T \\
+&= \sigma^2 {\bm x}_\ast (X^TX)^{-1} {\bm x}_\ast^T
 \end{aligned}
 $$
 
+を得る．ここで，$\hat \sigma$と$SE({\bm x}_\ast \hat{\bm \beta})$をそれぞれ
+
+$$
+\begin{aligned}
+\hat \sigma &:= \sqrt{RSS/(N-p-1)} \\
+SE({\bm x}_\ast \hat{\bm \beta}) &:= \hat \sigma \sqrt{{\bm x}_\ast (X^TX)^{-1} {\bm x}_\ast^T}
+\end{aligned}
+$$
+
+として，
+
+$$
+\begin{aligned}
+C &:= \frac{{\bm x}_\ast \hat{\bm \beta} - {\bm x}_\ast {\bm \beta}}{SE({\bm x}_\ast \hat{\bm \beta})} \\
+&= \frac{{\bm x}_\ast \hat{\bm \beta} - {\bm x}_\ast {\bm \beta}}{\sigma \sqrt{{\bm x}_\ast (X^TX)^{-1} {\bm x}_\ast^T}} \left/ \sqrt{\left. \frac{RSS}{\sigma^2} \right/ (N-p-1) } \right. \\
+& \sim t_{N-p-1}
+\end{aligned}
+$$
+
+が得られる．$\frac{{\bm x}_\ast \hat{\bm \beta} - {\bm x}_\ast {\bm \beta}}{\sigma \sqrt{{\bm x}_\ast (X^TX)^{-1} {\bm x}_\ast^T}}$は${\bm x}_\ast \hat{\bm \beta}$の平均を引いた物をその標準偏差で割っている形になっているので標準正規分布に従う．分母の部分は$RSS/\sigma^2 \sim \chi^2_{N-p-1}$であり，$RSS, \hat{\bm \beta} - {\bm \beta}$が独立であることがわかっているので，$t_{N-p-1}$に従うことがわかる．
+
+
+また，観測誤差$\bm \e$を考慮した信頼区間を予測区間$prediction interval$と呼ぶことが多い．この場合においても分散が評価できて，その場合は単純に観測誤差$\bm \e$の分散$\sigma^2$を足すだけである．この場合は
+
+$$
+\begin{aligned}
+P &:= \frac{ {\bm x}_\ast \hat{\bm \beta} - {\bm y}_\ast}{\sigma (1 + \sqrt{{\bm x}_\ast (X^TX)^{-1} {\bm x}_\ast})} \left/
+  \sqrt{ \left. \frac{RSS}{\sigma} \right/ (N-p-1) }
+\right.  \\
+ &\sim t_{N-p-1}
+\end{aligned}
+$$
+が成り立つ．
+
+
+以上より，棄却域を確率$\alpha$として定めると信頼区間は
+
+$$
+\begin{aligned}
+{\bm x}_\ast {\bm \beta} = {\bm x}_\ast \hat{\bm \beta}  \pm t_{N-p-1}(\alpha/2) \hat \sigma \sqrt{{\bm x}_\ast (X^TX)^{-1} {\bm x}_\ast^T}
+\end{aligned}
+$$
+となる．予測区間は
+
+$$
+\begin{aligned}
+{\bm y}_\ast = {\bm x}_\ast \hat{\bm \beta}  \pm t_{N-p-1}(\alpha/2) \hat \sigma \sqrt{1 + {\bm x}_\ast (X^TX)^{-1} {\bm x}_\ast^T}
+\end{aligned}
+$$
+
+として得られる．
+
+## 実験  
+
+```{r}
+est_beta <- function(x,y){
+  res <- solve(t(x)%*%x) %*% t(x) %*% y
+  return(res %>% as.vector)
+}
+
+calc_rss <- function(x,y){
+  betahat <- est_beta(x,y)
+  yhat <- x %*% betahat
+  ess  <- sum((yhat-mean(y))^2)
+  tss  <- sum((y-mean(y))^2)
+  rss  <- tss - ess
+  return(list(tss=tss, rss=rss, ess=ess))
+}
+
+est_sigma <- function(x,y,params){
+  N <- params$N; p <- params$p
+  rss <- calc_rss(x,y)$rss
+  res <- sqrt(rss/(n-p-1))
+  return(res)
+}
+
+est_conf_interval <- function(xast, x, y, params){
+  N <- params$N; p <- params$p; alpha <- params$alpha
+  betahat  <- est_beta(x,y)
+  inv_xtx  <- solve(t(x)%*%x)
+  sigmahat <- est_sigma(x,y,params)
+  cent     <- xast %*% betahat
+  interval <- apply(xast, 1, function(newx){
+   qt(p=1-alpha/2, df=N-p-1) * sigmahat * sqrt({newx %*% inv_xtx} %*% newx) 
+  })
+  res <- data.frame(
+    conf_lower = cent - interval,
+    conf_cent = cent, 
+    conf_upper = cent + interval)
+  return(res)
+}
+
+est_pred_interval <- function(xast, x, y, params){
+  N <- params$N; p <- params$p; alpha <- params$alpha
+  betahat  <- est_beta(x,y)
+  inv_xtx  <- solve(t(x)%*%x)
+  sigmahat <- est_sigma(x,y,params)
+  cent     <- xast %*% betahat
+  interval <- apply(xast, 1, function(newx){
+   qt(p=1-alpha/2, df=N-p-1) * sigmahat * sqrt(1 + {newx %*% inv_xtx} %*% newx) 
+  })
+  res <- data.frame(
+    pred_lower = cent - interval,
+    pred_cent = cent, 
+    pred_upper = cent + interval)
+  return(res)
+}
+  
+```
+
+```{r}
+set.seed(200)
+params <- list(
+  N = 100, p = 1, 
+  beta = c(1,1), 
+  eps = list(mean=0, sd=1),
+  alpha = 0.05
+)
+x    <- cbind(1, matrix(rnorm(params$N*params$p), ncol=params$p))
+xast <- cbind(1, seq(from=-10, to=10, length.out = 300))
+eps  <- rnorm(mean = params$eps$mean, sd = params$eps$sd, n = params$N)
+y    <- X %*% params$beta + eps
+
+upper_bounds <- bind_cols(
+    x=xast[,2], 
+    est_conf_interval(xast = xast, x = X,y = y,params = params) %>% 
+      dplyr::select(conf_cent, conf_upper),
+    est_pred_interval(xast = xast, x = X,y = y,params = params) %>% 
+      dplyr::select(pred_upper)
+  ) %>% 
+  rename(
+    cent = conf_cent,
+    conf = conf_upper,
+    pred = pred_upper
+  ) %>% 
+  pivot_longer(
+    cols = c("conf", "pred"), 
+    names_to = "interval", 
+    values_to = "upper_value"
+  )
+
+lower_bounds <- bind_cols(
+    x=xast[,2], 
+    est_conf_interval(xast = xast, x = X,y = y,params = params) %>% 
+      dplyr::select(conf_cent, conf_lower),
+    est_pred_interval(xast = xast, x = X,y = y,params = params) %>% 
+      dplyr::select(pred_lower)
+  ) %>% 
+  rename(
+    cent = conf_cent,
+    conf = conf_lower,
+    pred = pred_lower
+  ) %>%
+  pivot_longer(
+    cols = c("conf", "pred"), 
+    names_to = "interval", 
+    values_to = "lower_value"
+  )
+
+intervals <- left_join(upper_bounds, 
+                       lower_bounds, 
+                       by = c("x", "cent", "interval"))
+```
+
+```{r}
+intervals %>% 
+  ggplot(aes(x=x, y=cent)) + 
+  geom_ribbon(
+    aes(ymin=lower_value, 
+        ymax=upper_value, 
+        group = interval, 
+        color = interval, 
+        linetype = interval), 
+    alpha = 0) +
+  geom_line()
+  
+```
 
 
 
