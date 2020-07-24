@@ -1,0 +1,133 @@
+---
+title: "Linear_regression"
+author: "Masayuki Sakai"
+date: "yyyy/mm/dd"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 2
+    number_section: true
+  always_allow_html: yes
+header-includes: 
+  - \usepackage{bookmark} 
+  - \usepackage{xltxtra} 
+  - \usepackage{zxjatype} 
+  - \usepackage[ipa]{zxjafont} 
+  - \usepackage{mathspec}
+  - \usepackage{amsthm}
+  - \usepackage{indentfirst} # first paragraphのインデントを有効化（英文はインデントが不要のため）
+  - \parindent = 1em         # インデント（字下げ）を1文字に設定
+  - \usepackage{float} # 図の位置指定（fig.pos）をする場合使う
+  - \usepackage{bm}
+  - \newtheorem{definition}{Definition}
+  - \newtheorem{theorem}{Theorem}
+  - \newtheorem{assumption}{Assumption}
+  - \newtheorem{lemma}{Lemma}
+  - \newcommand{\rank}{\rm rank}
+  - \newcommand{\R}{\mathbb R}
+  - \newcommand{\e}{\varepsilon}
+  - \newcommand{\cov}{\rm Cov}
+  - \newcommand{\diag}{\rm diag}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width = 5, fig.height = 3, fig.align = 'center')
+```
+
+```{r import libraries, message=FALSE, warning=FALSE, echo=FALSE}
+require(tidyverse)
+require(data.table)
+require(latex2exp)
+```
+
+# はじめに  
+ここで扱う問題は，「分類：Classification」と呼ばれる類の問題である．目的変数が連続値ではなく，有限個の離散値の場合である．もっともシンプルなものは2値分類であり，例えば男女の判別や，疾患の診断などである．疾患の診断はある患者が該当する疾患に該当しているかどうかであるので，2値分類とみなせる．ここでは具体的には次のような代表的な手法を見ていく．
+
+* ロジスティック回帰：Logistic regression
+* 線形判別／二次判別：Linear or quadratic dscrimination
+* K-近傍方：K-Nearest neighbor
+
+# ロジスティック回帰：Logistic regression  
+
+## シグモイド関数  
+$p=1, \beta_0 = 0, \beta > 0, y=1$として，次のような関数$f$を考える．
+
+$$
+f(x) = \frac{1}{1 + \exp(-(\beta_0 + x\beta))}, \hspace{5mm} x \in \R
+$$
+
+これをシグモイド関数，ロジット関数などと呼んだりする．関数$f$は次のような形状になる．
+
+```{r}
+x <- seq(-5, 5, length.out = 200)
+beta_values <- as.list(seq(0.5, 3, 0.5))
+names(beta_values) <- str_c("beta_", seq(0.5, 3, 0.5))
+
+sigmoid <- function(x, beta0=0, beta){
+  1/(1 + exp(-(beta0 + x * beta)))
+}
+
+map_dfc(.x = beta_values, .f = function(beta){sigmoid(x=x,beta=beta)}) %>% 
+  mutate(x=x) %>% 
+  pivot_longer(-x) %>% 
+  ggplot(aes(x=x, y=value, group=name, color=name)) + 
+  geom_line() + 
+  labs(x = "x", y = TeX("$f(x)$"), color = "beta_values")
+```
+
+$beta$の値が小さいと全体的に緩やかに上昇し，大きくなるに連れてゼロ付近での変化が激しくなっている．
+
+$x$について1階，2階微分を調べると
+
+$$
+\begin{aligned}
+f'(x) &= \beta \frac{\exp(-(\beta_0 + x\beta))}{(1 + \exp(-(\beta_0 + x\beta)))^2} \ge 0 \\
+f''(x) &= -\beta^2 \frac{\exp(-(\beta_0 + x \beta))[1 - \exp(-(\beta_0 + x \beta))]}{(1 + \exp(-(\beta_0 + x \beta)))^3}
+\end{aligned}
+$$
+
+となる．$f'(x) \ge 0$より$f$は単調増加である．$f''(x)$の符号を決めるのは$1-\exp(-(\beta_0 + x \beta))$の部分であるので，
+
+$$
+\begin{aligned}
+& 1 - \exp(-(\beta_0 + x \beta)) = 0 \\
+& \Leftrightarrow 1 = \exp(-(\beta_0 + x \beta)) \\
+& \Leftrightarrow -\beta_0 - x \beta = 0 \\
+& \Leftrightarrow x = -\frac{\beta_0}{\beta}
+\end{aligned}
+$$
+
+となり，$x = -\beta_0/\beta$が変曲点となる．上記の例では$\beta_0 = 0$より$x=0$が変曲点となっている．
+ここでの目的は，線形回帰と同様$\beta_0, \beta$の推定値$\hat \beta_0, \hat \beta$を求めることである．
+そのために最尤推定を用いる．すなわち
+
+$$
+\begin{aligned}
+l(\beta_0, \beta) = \sum_{i=1}^{N} \log (1 + v_i), \hspace{5mm} v_i = \exp(-y_i(\beta_0 + \bm x_i  \bm \beta))
+\end{aligned}
+$$
+
+を最小にするような$\hat \beta_0, \hat \beta$を求める．ただし$i = 1,\dots,N$，$\bm \beta, \bm x \in \R^{p}, y_i \in {-1, 1}$とする．
+
+## Newton-Raphson法  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

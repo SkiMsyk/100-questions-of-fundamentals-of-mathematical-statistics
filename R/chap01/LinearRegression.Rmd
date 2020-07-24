@@ -14,12 +14,10 @@ header-includes:
   - \usepackage{xltxtra} 
   - \usepackage{zxjatype} 
   - \usepackage[ipa]{zxjafont} 
-  - \usepackage{mathspec}
   - \usepackage{amsthm}
   - \usepackage{indentfirst} # first paragraphのインデントを有効化（英文はインデントが不要のため）
   - \parindent = 1em         # インデント（字下げ）を1文字に設定
   - \usepackage{float} # 図の位置指定（fig.pos）をする場合使う
-  - \usepackage{bm}
   - \newtheorem{definition}{Definition}
   - \newtheorem{theorem}{Theorem}
   - \newtheorem{assumption}{Assumption}
@@ -42,7 +40,7 @@ require(latex2exp)
 ```
 
 # 最小二乗法　　
-ここでは，n個の対になる観測値，${\bm x} = (x_1, x_2, \ldots, x_n)^T \in \mathbb R^n$と${\bm y} = (y_1, y_2, \ldots, y_n)^T \in \mathbb R^n$について最小二乗法により線形モデルである
+ここでは，n個の対になる観測値，${\pmb x} = (x_1, x_2, \ldots, x_n)^T \in \mathbb R^n$と${\pmb y} = (y_1, y_2, \ldots, y_n)^T \in \mathbb R^n$について最小二乗法により線形モデルである
 
 $$
 y_i = \beta_0 + \beta_1 x_i + \varepsilon_i \\
@@ -50,7 +48,7 @@ y_i = \beta_0 + \beta_1 x_i + \varepsilon_i \\
 $$
 のパラメーター$\beta_0, \beta_1$を求める．
 
-これは，直線から上下の距離$|y_i - \beta_0 - \beta_1 x_i|$の二乗和$L$を最小にする${\bm \beta} = (\beta_0, \beta_1)^T \in \mathbb R^2$を求める時に，$L$の偏微分を用いる．まず
+これは，直線から上下の距離$|y_i - \beta_0 - \beta_1 x_i|$の二乗和$L$を最小にする${\pmb \beta} = (\beta_0, \beta_1)^T \in \mathbb R^2$を求める時に，$L$の偏微分を用いる．まず
 
 $$
 L := \sum_{i=1}^{n} (y_i - \beta_0 - \beta_1 x_i)^2
@@ -72,14 +70,14 @@ $$
 \end{aligned}
 $$
 
-を得る．ただし$\sum_{i=1}^{n}(x_i - \bar x)^2 \neq 0$である．これは，共変量$\bm x$の値が全て同じことを意味しており，そのような変数はなんら情報を持たないためこのケースは実務上無視して良い．
+を得る．ただし$\sum_{i=1}^{n}(x_i - \bar x)^2 \neq 0$である．これは，共変量$\pmb x$の値が全て同じことを意味しており，そのような変数はなんら情報を持たないためこのケースは実務上無視して良い．
 また，$\bar x = \sum x_i/n, \bar y = \sum y_i / n$である．
 
-ここで，$\bm x' = \bm x - \bar x, \bm y' = \bm y - \bar y$とすると，$\bar{y'} = \bar{x'} = 0$で$\bar \beta_0 = 0$，$\hat \beta_1 = \sum x_i y_i/\sum x_i^2$となり計算が簡単になる．
+ここで，$\pmb x' = \pmb x - \bar x, \pmb y' = \pmb y - \bar y$とすると，$\bar{y'} = \bar{x'} = 0$で$\bar \beta_0 = 0$，$\hat \beta_1 = \sum x_i y_i/\sum x_i^2$となり計算が簡単になる．
 加減による傾きの影響は無いので，$\hat \beta_1$の推定はこのままで問題はないが，切片項$\beta_0$はもとのスケールで計算する必要がある．
 
 ## 実装
-ここでは，シンプルに$\bm x, \bm y$という２つのベクトルを受け取った場合に，$\hat \beta_0, \hat \beta_1$を返す関数を書く．
+ここでは，シンプルに$\pmb x, \pmb y$という２つのベクトルを受け取った場合に，$\hat \beta_0, \hat \beta_1$を返す関数を書く．
 
 ```{r make function-lsm}
 lsm <- function(x, y){
@@ -135,19 +133,19 @@ data.frame(x=x[,2], y=y) %>%
 $$
 y:= \begin{bmatrix} y_1 \\ \vdots \\ y_n \end{bmatrix}, \hspace{5mm}
 X:= \begin{bmatrix} 1 & x_1 \\ \vdots & \vdots \\ 1 & x_n \end{bmatrix}, \hspace{5mm}
-\bm \beta:=\begin{bmatrix} \beta_0 \\ \beta_1 \end{bmatrix}
+\pmb \beta:=\begin{bmatrix} \beta_0 \\ \beta_1 \end{bmatrix}
 $$
 
 とすると，
 
 $$
-L = \|y - X \bm \beta \|^2
+L = \|y - X \pmb \beta \|^2
 $$
 
 とかけて，
 
 $$
-\nabla L := \begin{bmatrix} \frac{\partial L}{\partial \beta_0} \\ \frac{\partial L}{\partial \beta_1} \end{bmatrix}  = -2 X^T (y - X \bm \beta)
+\nabla L := \begin{bmatrix} \frac{\partial L}{\partial \beta_0} \\ \frac{\partial L}{\partial \beta_1} \end{bmatrix}  = -2 X^T (y - X \pmb \beta)
 $$
 
 と表すことができる．ここから共変量の数を増やして
@@ -157,13 +155,13 @@ X:= \begin{bmatrix}
   1 & x_{11} & \cdots & x_{1p}  \\ 
   \vdots & \vdots & \ddots & \vdots \\
   1 & x_{n1} & \cdots & x_{np} \end{bmatrix} \hspace{5mm} 
-\bm beta := \begin{bmatrix} \beta_0 \\ \beta_1 \\ \vdots \\ \beta_p \end{bmatrix} 
+\pmb beta := \begin{bmatrix} \beta_0 \\ \beta_1 \\ \vdots \\ \beta_p \end{bmatrix} 
 $$
 
 とする．このように拡張してもやることは変わらず，
 
 $$
--2 X^T (y - X \bm \beta) = {\bf 0}
+-2 X^T (y - X \pmb \beta) = {\bf 0}
 $$
 
 を解く．結果として，
@@ -238,43 +236,43 @@ $V,W$をそれぞれ$\R^n, \R^m$の部分空間として，行列$A \in \R^{m \t
 
 
 # $\beta$の分布　　　
-被説明変数$\bm y \in \R^N$が共変量$X \in \R^{N \times (p+1)}$とその係数$\bm \beta \in \R^{p+1}$と誤差項$\bm \varepsilon \sim N(\bm \mu, \sigma^2 I)$によって下記のような関係にあると仮定する．
+被説明変数$\pmb y \in \R^N$が共変量$X \in \R^{N \times (p+1)}$とその係数$\pmb \beta \in \R^{p+1}$と誤差項$\pmb \varepsilon \sim N(\pmb \mu, \sigma^2 I)$によって下記のような関係にあると仮定する．
 
 $$
-\bm y = X \bm \beta + \bm \varepsilon
+\pmb y = X \pmb \beta + \pmb \varepsilon
 $$
 
-ここで，前項のように$\bm \beta$と推定された$\hat{\bm \beta}$は異なるものであることに注意しよう．
-あくまで$\bm \beta$の値は未知である．いま，あらためて$\hat{\bm \beta}$は次のように表せることを確認する．
+ここで，前項のように$\pmb \beta$と推定された$\hat{\pmb \beta}$は異なるものであることに注意しよう．
+あくまで$\pmb \beta$の値は未知である．いま，あらためて$\hat{\pmb \beta}$は次のように表せることを確認する．
 
 $$
 \begin{aligned}
-\hat{\bm \beta} &= (X^T X)^{-1} X^Ty \\
-&= (X^T X)^{-1} X^T (X \bm \beta + \bm \e) \\
-&= {\bm \beta} + (X^T X)^{-1} {\bm \e}
+\hat{\pmb \beta} &= (X^T X)^{-1} X^Ty \\
+&= (X^T X)^{-1} X^T (X \pmb \beta + \pmb \e) \\
+&= {\pmb \beta} + (X^T X)^{-1} {\pmb \e}
 \end{aligned}
 $$
 
-となり，$\hat{\bm \beta}$は$\bm \e$によって決まることがわかる．$\bm \e$が従う分布はその平均を$E[\bm \e] = \bf 0$と仮定していることから，$\hat{\bm \beta}$の分布の平均は$\bm \beta$となる．このように，ある推定量の平均が真値に一致する時，その推定量を不偏推定量(unbiased estimator)と呼ぶ．また，$\hat{\bm \beta}$の分散を考えよう．それぞれの要素の分散$V(\hat{\beta_i})$は定義通り$E(\hat{\beta_i} - {\beta_i})^2$である．また，それぞれの要素間の共分散$\sigma_{i,j} = {\rm Cov}(\hat{\beta_i}, \hat{\beta_j}), (i \neq j)$と定めれば，$\hat{\bm \beta}$の共分散行列は，次のようになる．
+となり，$\hat{\pmb \beta}$は$\pmb \e$によって決まることがわかる．$\pmb \e$が従う分布はその平均を$E[\pmb \e] = \bf 0$と仮定していることから，$\hat{\pmb \beta}$の分布の平均は$\pmb \beta$となる．このように，ある推定量の平均が真値に一致する時，その推定量を不偏推定量(unbiased estimator)と呼ぶ．また，$\hat{\pmb \beta}$の分散を考えよう．それぞれの要素の分散$V(\hat{\beta_i})$は定義通り$E(\hat{\beta_i} - {\beta_i})^2$である．また，それぞれの要素間の共分散$\sigma_{i,j} = {\rm Cov}(\hat{\beta_i}, \hat{\beta_j}), (i \neq j)$と定めれば，$\hat{\pmb \beta}$の共分散行列は，次のようになる．
 
 $$
 \begin{aligned}
-V(\hat{\bm \beta}) &= E[(\hat{\bm \beta} - \bm \beta)(\hat{\bm \beta} - \bm \beta)^T] \\
-&= E[(\bm \beta + (X^T X)^{-1} X^T \bm \e - \bm beta)(\bm \beta + (X^T X)^{-1} X^T \bm \e - \bm \beta)^T] \\
-&= E[(X^T X)^{-1} X^T \bm \e {\bm \e}^T (X^T X)^{-1} X^T] \\ 
-&= (X^T X)^{-1} E[{\bm \e}{\bm \e}^T] X (X^T X)^{-1} \\
+V(\hat{\pmb \beta}) &= E[(\hat{\pmb \beta} - \pmb \beta)(\hat{\pmb \beta} - \pmb \beta)^T] \\
+&= E[(\pmb \beta + (X^T X)^{-1} X^T \pmb \e - \pmb beta)(\pmb \beta + (X^T X)^{-1} X^T \pmb \e - \pmb \beta)^T] \\
+&= E[(X^T X)^{-1} X^T \pmb \e {\pmb \e}^T (X^T X)^{-1} X^T] \\ 
+&= (X^T X)^{-1} E[{\pmb \e}{\pmb \e}^T] X (X^T X)^{-1} \\
 &= \sigma^2 (X^T X)^{-1}
 \end{aligned}
 $$
 
-となる．これより$\hat{\bm \beta}$の分布は下記のようになることがわかった．
+となる．これより$\hat{\pmb \beta}$の分布は下記のようになることがわかった．
 
 $$
-\hat{\bm \beta} \sim N(\bm \beta, \sigma^2 (X^T X)^{-1})
+\hat{\pmb \beta} \sim N(\pmb \beta, \sigma^2 (X^T X)^{-1})
 $$
 
 # 二乗誤差の分布：Residual sum of squares  
-ここでは，$L = \| \bm y - X \hat{\bm \beta} \|^2$の分布を導出する．まず$H:= X (X^T X)^{-1} X^T$として，その性質を確認していく．
+ここでは，$L = \| \pmb y - X \hat{\pmb \beta} \|^2$の分布を導出する．まず$H:= X (X^T X)^{-1} X^T$として，その性質を確認していく．
 
 以下を確認しなさい．
 $$
@@ -282,8 +280,8 @@ $$
 H^2 &= H \\
 (I - H)^2 &= I - H \\
 HX &= X \\
-\hat{\bm y} &= H \bm y \\
-\bm y - \hat{\bm y} &= (I - H) \e
+\hat{\pmb y} &= H \pmb y \\
+\pmb y - \hat{\pmb y} &= (I - H) \e
 \end{aligned}
 $$
 
@@ -299,7 +297,7 @@ $H, I-H$の固有値は，$0,1$のみであり，$H$の固有値1と$I-H$の固�
 
 $$
 \begin{aligned}
-RSS &:= \|\bm y - \hat{\bm y} \|  \\
+RSS &:= \|\pmb y - \hat{\pmb y} \|  \\
 &= [(I-H) \e]^T [(I-H) \e] \\
 &= \e^T (I-H)^2 \e \\
 &= \e^T (I-H) \e
@@ -317,11 +315,11 @@ $$
 P(I-H)P^{T} = \diag (1, \ldots, 0, \ldots, 0)
 $$
 
-また，$\bm v = P \bm \e \in \R^N$とすれば$\bm \e = P^T  \bm v$であり，
+また，$\pmb v = P \pmb \e \in \R^N$とすれば$\pmb \e = P^T  \pmb v$であり，
 
 $$
 \begin{aligned}
-RSS &= {\bm \e}^{T} (I-H) {\bm \e}  \\
+RSS &= {\pmb \e}^{T} (I-H) {\pmb \e}  \\
   &= [v_1, \ldots, v_{N-p-1}, v_{N-p}, \ldots, v_N] \begin{bmatrix}
       1      & 0      & \cdots & \cdots & \cdots & 0       \\
       0      & \ddots & 0      & \cdots & \cdots & \vdots  \\
@@ -338,12 +336,12 @@ RSS &= {\bm \e}^{T} (I-H) {\bm \e}  \\
 $$
 
 
-とできる．また$E[P \bm{\e}] = 0$より，$\bm w = (v_1, v_2, \ldots, v_{N-p-1})$である$\bm w$に対して$E[\bm w] = 0$が成り立つ．また，
+とできる．また$E[P \pmb{\e}] = 0$より，$\pmb w = (v_1, v_2, \ldots, v_{N-p-1})$である$\pmb w$に対して$E[\pmb w] = 0$が成り立つ．また，
 
 $$
 \begin{aligned}
-E[{\bm v}{\bm v}^T] &= E[P{\bm \e}(P{\bm \e})^T] \\
-&= PE[{\bm \e}{\bm \e}^T] P^T \\
+E[{\pmb v}{\pmb v}^T] &= E[P{\pmb \e}(P{\pmb \e})^T] \\
+&= PE[{\pmb \e}{\pmb \e}^T] P^T \\
 &= P \sigma^2 \tilde I P^T \\
 &= \sigma^2 \tilde I
 \end{aligned}
@@ -351,7 +349,7 @@ $$
 
 が成り立つ．ここで$\tilde I$は対角成分の最初から$N-p-1$個目までが1でそれ以降が0であるような対角行列である．
 
-すなわち，$E[{\bm w}{\bm w}^T] = \sigma^2 I$である．ここで，正規分布においては各変量の独立性と，それらの共分散行列が対角行列であることは同値なので，
+すなわち，$E[{\pmb w}{\pmb w}^T] = \sigma^2 I$である．ここで，正規分布においては各変量の独立性と，それらの共分散行列が対角行列であることは同値なので，
 
 $$
 \frac{RSS}{\sigma^2} \sim \chi^2_{N-p-1}
@@ -394,11 +392,11 @@ legend("topright", legend=1:10, col=1:10, lty=1)
 ```
 
 # $\hat \beta_j$の仮説検定  
-回帰モデルの興味の１つは，推定した係数$\hat{\bm \beta} = 0$かどうかである．つまり，興味のある変数$\bm y$に対して影響の有無を確かめたい．
+回帰モデルの興味の１つは，推定した係数$\hat{\pmb \beta} = 0$かどうかである．つまり，興味のある変数$\pmb y$に対して影響の有無を確かめたい．
 
-そのために，「もし$\hat{\bm \beta} = 0$であったなら」という仮定のもと$\hat{\bm \beta}$から計算できる統計量の分布に対する実際の推定値の値の関係を判断材料とする．
+そのために，「もし$\hat{\pmb \beta} = 0$であったなら」という仮定のもと$\hat{\pmb \beta}$から計算できる統計量の分布に対する実際の推定値の値の関係を判断材料とする．
 
-具体的には，$\hat{\bm \beta}$が自由度$N-p-1$の$t$分布に従うことを確認し，仮説検定を構成する．
+具体的には，$\hat{\pmb \beta}$が自由度$N-p-1$の$t$分布に従うことを確認し，仮説検定を構成する．
 
 ## 誤差による推定値のばらつき  
 ```{r beta-estimation-experiment}
@@ -484,7 +482,7 @@ ggplot(data.frame(x=c(-10, 10)), aes(x)) +
 有意水準$\alpha = 0.01, 0.05$として検定統計量$t$によって検定を行う．ここで帰無仮説は$\beta_j = 0$である．帰無仮説が成立する下では$t \sim t_{N-p-1}$となる． 
 
 
-いま，$\bm \e$の標準偏差$\sigma$の推定量を次のように構成する．
+いま，$\pmb \e$の標準偏差$\sigma$の推定量を次のように構成する．
 
 $$
 \hat \sigma := \sqrt{\frac{RSS}{N-p-1}}
@@ -556,7 +554,7 @@ $$
 
 $$
 \begin{aligned}
-(\hat{\bm \beta} - {\bm \beta}) ({\bm y} - {\hat {\bm y}})^T &= (X^TX)^{-1} X^T {\bm \e} {\bm \e}^T (I-H)
+(\hat{\pmb \beta} - {\pmb \beta}) ({\pmb y} - {\hat {\pmb y}})^T &= (X^TX)^{-1} X^T {\pmb \e} {\pmb \e}^T (I-H)
 \end{aligned}
 $$
 
@@ -564,15 +562,15 @@ $$
 
 $$
 \begin{aligned}
-E[(\hat{\bm \beta} - {\bm \beta}) ({\bm y} - {\hat {\bm y}})^T] &= \sigma^2 I E[(X^TX)^{-1} X^T(I-H)] \\
+E[(\hat{\pmb \beta} - {\pmb \beta}) ({\pmb y} - {\hat {\pmb y}})^T] &= \sigma^2 I E[(X^TX)^{-1} X^T(I-H)] \\
 &= \sigma^2 I E[(X^TX)^{-1} X^T - (X^TX)^{-1} X^TH] \\
 &= 0
 \end{aligned}
 $$
 
-となる．ここで，$HX=X \Leftrightarrow X^TH = X$を用いた．また，${\bm y} - {\bar {\bm y}} = (I-H){\bm \e}$は正規分布に従うこと，$\hat{\bm \beta}$が正規分布に従うことから$\hat{\bm \beta} - {\bm \beta}$も正規分布に従うので，正規分布の性質から，$(\hat{\bm \beta} - {\bm \beta}) ({\bm y} - {\hat {\bm y}})^T$は互いに独立であることがわかる．
+となる．ここで，$HX=X \Leftrightarrow X^TH = X$を用いた．また，${\pmb y} - {\bar {\pmb y}} = (I-H){\pmb \e}$は正規分布に従うこと，$\hat{\pmb \beta}$が正規分布に従うことから$\hat{\pmb \beta} - {\pmb \beta}$も正規分布に従うので，正規分布の性質から，$(\hat{\pmb \beta} - {\pmb \beta}) ({\pmb y} - {\hat {\pmb y}})^T$は互いに独立であることがわかる．
 
-$U$は$\hat{\bm \beta} - {\bm \beta}$の関数, $V$は$RSS$，すなわち$\bm y - \hat{\bm  y}$の関数であるので，上記の理由により$U,V$は互いに独立であることが導かれた．
+$U$は$\hat{\pmb \beta} - {\pmb \beta}$の関数, $V$は$RSS$，すなわち$\pmb y - \hat{\pmb  y}$の関数であるので，上記の理由により$U,V$は互いに独立であることが導かれた．
 
 ## 実験：検定の統計量の手計算と関数の結果比較  
 帰無仮説$H_0:\beta_j=0$，対立仮説$H_1:\beta_j \neq 0$という仮説検定を行う．$p=1$として，$H_0$が成り立つ下での
@@ -625,8 +623,8 @@ results
 summary(lm(y~x))$coef %>% data.frame()
 ```
 
-## 実験：$\hat{\bm \beta}$の分布  
-上記の要領で$\hat{\bm \beta}$の推定を繰りかえし，$\hat{\beta_1}/SE(\hat \beta_1)$のヒストグラムを描く．
+## 実験：$\hat{\pmb \beta}$の分布  
+上記の要領で$\hat{\pmb \beta}$の推定を繰りかえし，$\hat{\beta_1}/SE(\hat \beta_1)$のヒストグラムを描く．
 
 ```{r}
 lsm <- function(X, y){
@@ -694,9 +692,9 @@ gridExtra::grid.arrange(p1, p2, ncol=2, widths = c(2,2))
 
 $$
 \begin{aligned}
-RSS &:= \| \hat{\bm y} - \bm y \|^2 = \| (I-H){\bm y} \|^2 \\
-ESS &:= \| \hat{\bm y} - \bar{\bm y} \|^2 = \| (H-W){\bm y} \|^2 \\
-TSS &:= \| \bm y - \bar{\bm y} \|^2 = \| (I-W) \bm y  \|^2
+RSS &:= \| \hat{\pmb y} - \pmb y \|^2 = \| (I-H){\pmb y} \|^2 \\
+ESS &:= \| \hat{\pmb y} - \bar{\pmb y} \|^2 = \| (H-W){\pmb y} \|^2 \\
+TSS &:= \| \pmb y - \bar{\pmb y} \|^2 = \| (I-W) \pmb y  \|^2
 \end{aligned}
 $$
 
@@ -711,12 +709,12 @@ $$
 を決定係数(coefficient of determination)という．この時，$R^2$は$p=1$の場合，標本相関係数$\hat p$の二乗に一致する．
 
 $$
-\hat p := \frac{(\bm x - \bar x)^T(\bm y - \bar y)}{\sqrt{\sum_{i=1}^{N}(x_i - \bar x)^2 \sum_{i=1}^{N}(y_i - \bar y)}}
+\hat p := \frac{(\pmb x - \bar x)^T(\pmb y - \bar y)}{\sqrt{\sum_{i=1}^{N}(x_i - \bar x)^2 \sum_{i=1}^{N}(y_i - \bar y)}}
 $$
 
 $$
 \begin{aligned}
-\frac{ESS}{TSS} &= \frac{\hat{\beta_1} \| \bm x - \bar x \|^2}{\| \bm y - \bar y \|^2} \\
+\frac{ESS}{TSS} &= \frac{\hat{\beta_1} \| \pmb x - \bar x \|^2}{\| \pmb y - \bar y \|^2} \\
 &= \left\{ \frac{\sum_{i=1}^{N}(x_i - \bar x)(y_i - \bar y)}{\sum_{i=1}^{N} (x_i - \bar x)^2} \right\}^2 \frac{\sum_{i=1}^{N}(x_i - \bar x)^2}{\sum_{i=1}^{N}(y_i - \bar y)^2} \\
 &=\frac{\left[\sum_{i=1}^{N}(x_i - \bar x)(y_i - \bar y) \right]^2}{\sum_{i=1}^{N} (x_i - \bar x)^2 \sum_{i=1}^{N} (y_i - \bar y)^2} \\
 &= \hat p^2
@@ -785,7 +783,7 @@ print(res)
 ```
 
 # 信頼区間と予測区間  
-ここからは$\hat{\bm \beta}$の分布を利用して信頼区間について考えていく．$t$の従う分布の確率密度関数を$f$とおいた時，
+ここからは$\hat{\pmb \beta}$の分布を利用して信頼区間について考えていく．$t$の従う分布の確率密度関数を$f$とおいた時，
 
 $$
 \begin{aligned}
@@ -800,27 +798,27 @@ $$
 $$
 が得られる．
 
-$\bm x_\ast \hat{\bm \beta}$を，推定に用いた$\bm x$とは異なる点$\bm x_\ast \in \R^{p+1}$とおく．この時，$\bm x_\ast \hat{\bm \beta}$の平均
+$\pmb x_\ast \hat{\pmb \beta}$を，推定に用いた$\pmb x$とは異なる点$\pmb x_\ast \in \R^{p+1}$とおく．この時，$\pmb x_\ast \hat{\pmb \beta}$の平均
 
 $$
-E[\bm x_\ast \hat{\bm \beta}] = \bm x_\ast E[\hat{\bm \beta}]
+E[\pmb x_\ast \hat{\pmb \beta}] = \pmb x_\ast E[\hat{\pmb \beta}]
 $$
 
 であり，定数行列$A \in \R^{n \times m}$と確率変数ベクトル$X \in \R^n$について，$V(AX) = AV(X)A^T$が成り立つことから，
 
 $$
 \begin{aligned}
-V[\bm{x}_\ast \hat{\bm \beta}] &= {\bm x_\ast} V(\hat{\bm \beta}) {\bm x_\ast}^T \\
-&= \sigma^2 {\bm x}_\ast (X^TX)^{-1} {\bm x}_\ast^T
+V[\pmb{x}_\ast \hat{\pmb \beta}] &= {\pmb x_\ast} V(\hat{\pmb \beta}) {\pmb x_\ast}^T \\
+&= \sigma^2 {\pmb x}_\ast (X^TX)^{-1} {\pmb x}_\ast^T
 \end{aligned}
 $$
 
-を得る．ここで，$\hat \sigma$と$SE({\bm x}_\ast \hat{\bm \beta})$をそれぞれ
+を得る．ここで，$\hat \sigma$と$SE({\pmb x}_\ast \hat{\pmb \beta})$をそれぞれ
 
 $$
 \begin{aligned}
 \hat \sigma &:= \sqrt{RSS/(N-p-1)} \\
-SE({\bm x}_\ast \hat{\bm \beta}) &:= \hat \sigma \sqrt{{\bm x}_\ast (X^TX)^{-1} {\bm x}_\ast^T}
+SE({\pmb x}_\ast \hat{\pmb \beta}) &:= \hat \sigma \sqrt{{\pmb x}_\ast (X^TX)^{-1} {\pmb x}_\ast^T}
 \end{aligned}
 $$
 
@@ -828,20 +826,20 @@ $$
 
 $$
 \begin{aligned}
-C &:= \frac{{\bm x}_\ast \hat{\bm \beta} - {\bm x}_\ast {\bm \beta}}{SE({\bm x}_\ast \hat{\bm \beta})} \\
-&= \frac{{\bm x}_\ast \hat{\bm \beta} - {\bm x}_\ast {\bm \beta}}{\sigma \sqrt{{\bm x}_\ast (X^TX)^{-1} {\bm x}_\ast^T}} \left/ \sqrt{\left. \frac{RSS}{\sigma^2} \right/ (N-p-1) } \right. \\
+C &:= \frac{{\pmb x}_\ast \hat{\pmb \beta} - {\pmb x}_\ast {\pmb \beta}}{SE({\pmb x}_\ast \hat{\pmb \beta})} \\
+&= \frac{{\pmb x}_\ast \hat{\pmb \beta} - {\pmb x}_\ast {\pmb \beta}}{\sigma \sqrt{{\pmb x}_\ast (X^TX)^{-1} {\pmb x}_\ast^T}} \left/ \sqrt{\left. \frac{RSS}{\sigma^2} \right/ (N-p-1) } \right. \\
 & \sim t_{N-p-1}
 \end{aligned}
 $$
 
-が得られる．$\frac{{\bm x}_\ast \hat{\bm \beta} - {\bm x}_\ast {\bm \beta}}{\sigma \sqrt{{\bm x}_\ast (X^TX)^{-1} {\bm x}_\ast^T}}$は${\bm x}_\ast \hat{\bm \beta}$の平均を引いた物をその標準偏差で割っている形になっているので標準正規分布に従う．分母の部分は$RSS/\sigma^2 \sim \chi^2_{N-p-1}$であり，$RSS, \hat{\bm \beta} - {\bm \beta}$が独立であることがわかっているので，$t_{N-p-1}$に従うことがわかる．
+が得られる．$\frac{{\pmb x}_\ast \hat{\pmb \beta} - {\pmb x}_\ast {\pmb \beta}}{\sigma \sqrt{{\pmb x}_\ast (X^TX)^{-1} {\pmb x}_\ast^T}}$は${\pmb x}_\ast \hat{\pmb \beta}$の平均を引いた物をその標準偏差で割っている形になっているので標準正規分布に従う．分母の部分は$RSS/\sigma^2 \sim \chi^2_{N-p-1}$であり，$RSS, \hat{\pmb \beta} - {\pmb \beta}$が独立であることがわかっているので，$t_{N-p-1}$に従うことがわかる．
 
 
-また，観測誤差$\bm \e$を考慮した信頼区間を予測区間$prediction interval$と呼ぶことが多い．この場合においても分散が評価できて，その場合は単純に観測誤差$\bm \e$の分散$\sigma^2$を足すだけである．この場合は
+また，観測誤差$\pmb \e$を考慮した信頼区間を予測区間$prediction interval$と呼ぶことが多い．この場合においても分散が評価できて，その場合は単純に観測誤差$\pmb \e$の分散$\sigma^2$を足すだけである．この場合は
 
 $$
 \begin{aligned}
-P &:= \frac{ {\bm x}_\ast \hat{\bm \beta} - {\bm y}_\ast}{\sigma (1 + \sqrt{{\bm x}_\ast (X^TX)^{-1} {\bm x}_\ast})} \left/
+P &:= \frac{ {\pmb x}_\ast \hat{\pmb \beta} - {\pmb y}_\ast}{\sigma (1 + \sqrt{{\pmb x}_\ast (X^TX)^{-1} {\pmb x}_\ast})} \left/
   \sqrt{ \left. \frac{RSS}{\sigma} \right/ (N-p-1) }
 \right.  \\
  &\sim t_{N-p-1}
@@ -854,14 +852,14 @@ $$
 
 $$
 \begin{aligned}
-{\bm x}_\ast {\bm \beta} = {\bm x}_\ast \hat{\bm \beta}  \pm t_{N-p-1}(\alpha/2) \hat \sigma \sqrt{{\bm x}_\ast (X^TX)^{-1} {\bm x}_\ast^T}
+{\pmb x}_\ast {\pmb \beta} = {\pmb x}_\ast \hat{\pmb \beta}  \pm t_{N-p-1}(\alpha/2) \hat \sigma \sqrt{{\pmb x}_\ast (X^TX)^{-1} {\pmb x}_\ast^T}
 \end{aligned}
 $$
 となる．予測区間は
 
 $$
 \begin{aligned}
-{\bm y}_\ast = {\bm x}_\ast \hat{\bm \beta}  \pm t_{N-p-1}(\alpha/2) \hat \sigma \sqrt{1 + {\bm x}_\ast (X^TX)^{-1} {\bm x}_\ast^T}
+{\pmb y}_\ast = {\pmb x}_\ast \hat{\pmb \beta}  \pm t_{N-p-1}(\alpha/2) \hat \sigma \sqrt{1 + {\pmb x}_\ast (X^TX)^{-1} {\pmb x}_\ast^T}
 \end{aligned}
 $$
 
